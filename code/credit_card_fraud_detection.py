@@ -6,12 +6,12 @@ from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 
 # Reading the dataset
-#card_transactions = pd.read_csv('../creditcard.csv')
+card_transactions = pd.read_csv('../creditcard.csv')
 
 # Saving in a pickle to be read faster
 #card_transactions.to_pickle('card_transactions.pkl')
 
-card_transactions = pd.read_pickle('card_transactions.pkl')
+#card_transactions = pd.read_pickle('card_transactions.pkl')
 
 ## 1. Understand the problem and the data
 
@@ -21,8 +21,6 @@ card_transactions = pd.read_pickle('card_transactions.pkl')
 #print(card_transactions.columns)
 
 #print(card_transactions.head(3))
-
-
 
 # See Class distribution
 count_classes = pd.value_counts(card_transactions['Class'], sort = True)
