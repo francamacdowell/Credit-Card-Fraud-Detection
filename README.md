@@ -1,5 +1,5 @@
 
-# Credit Card Frau Detection
+# Credit Card Fraud Detection
 
 ## Introduction
 
@@ -32,10 +32,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from IPython.core.interactiveshell import InteractiveShell
-InteractiveShell.ast_node_interactivity = "all"
 ```
-
-__Note__: The last line output the variable without need call __print()__ in the notebook, code can be more clear with this. 
 
 ### Reading the dataset:
 
@@ -50,26 +47,18 @@ I will start seeing the shape and columns names of our dataset, to answer my que
 
 
 ```python
-card_transactions.shape
-card_transactions.columns
+print(card_transactions.shape)
+print('--------------------------------------------------------------------')
+print(card_transactions.columns)
 ```
 
-
-
-
     (284807, 31)
-
-
-
-
-
-
+    --------------------------------------------------------------------
     Index(['Time', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10',
            'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17', 'V18', 'V19', 'V20',
            'V21', 'V22', 'V23', 'V24', 'V25', 'V26', 'V27', 'V28', 'Amount',
            'Class'],
           dtype='object')
-
 
 
 As mentioned before, the features passed by a PCA algorithm and they are confidentials. The name doesn't help us to understand.
@@ -78,11 +67,8 @@ Let's check all feature __types__:
 
 
 ```python
-card_transactions.dtypes
+print(card_transactions.dtypes)
 ```
-
-
-
 
     Time      float64
     V1        float64
@@ -118,7 +104,6 @@ card_transactions.dtypes
     dtype: object
 
 
-
 All of them are numerical and it's coherent. So doesn't need any type of cast.
 
 ### Data Distribution
@@ -141,7 +126,7 @@ plt.ylabel("Frequency")
 
 
 
-    <matplotlib.axes._subplots.AxesSubplot at 0x7fc2a3dbb908>
+    <matplotlib.axes._subplots.AxesSubplot at 0x7fc2a3c24eb8>
 
 
 
@@ -167,7 +152,7 @@ plt.ylabel("Frequency")
 
 
 
-![png](output_15_4.png)
+![png](output_14_4.png)
 
 
 Now I'm sure the data is totally unbalanced.
@@ -182,14 +167,10 @@ I'm going to check if have any value on instances with null values:
 
 
 ```python
-card_transactions.isnull().values.any()
+print(card_transactions.isnull().values.any())
 ```
 
-
-
-
     False
-
 
 
 Well, I don't need to worry about treat null values.
@@ -229,11 +210,8 @@ print('Fraud: ', round(len(normal_data)/len(card_transactions) * 100,2), '% of t
 
 
 ```python
-fraud_data.Amount.describe()
+print(fraud_data.Amount.describe())
 ```
-
-
-
 
     count     492.000000
     mean      122.211321
@@ -246,16 +224,12 @@ fraud_data.Amount.describe()
     Name: Amount, dtype: float64
 
 
-
 ##### Fraud transactions:
 
 
 ```python
-normal_data.Amount.describe()
+print(normal_data.Amount.describe())
 ```
-
-
-
 
     count    284315.000000
     mean         88.291022
@@ -266,7 +240,6 @@ normal_data.Amount.describe()
     75%          77.050000
     max       25691.160000
     Name: Amount, dtype: float64
-
 
 
 ## Feature engineering / feature selection
