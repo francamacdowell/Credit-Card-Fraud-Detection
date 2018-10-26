@@ -9,6 +9,10 @@
    
    The features V1, V2, ..., V28 are the principal components obtained with PCA and all are numeric and confidentials.
 
+#### Dataset 
+
+https://www.kaggle.com/mlg-ulb/creditcardfraud
+
 ## Problem Statement
 
 Due to the fraudulent credit card transactions problem and your data, how good we can predict them?
@@ -31,7 +35,6 @@ Doing the necessary imports:
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from IPython.core.interactiveshell import InteractiveShell
 ```
 
 ### Reading the dataset:
@@ -48,12 +51,12 @@ I will start seeing the shape and columns names of our dataset, to answer my que
 
 ```python
 print(card_transactions.shape)
-print('--------------------------------------------------------------------')
+print('----------------------------------------------------------------------')
 print(card_transactions.columns)
 ```
 
     (284807, 31)
-    --------------------------------------------------------------------
+    ----------------------------------------------------------------------
     Index(['Time', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10',
            'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17', 'V18', 'V19', 'V20',
            'V21', 'V22', 'V23', 'V24', 'V25', 'V26', 'V27', 'V28', 'Amount',
@@ -126,40 +129,34 @@ plt.ylabel("Frequency")
 
 
 
-    <matplotlib.axes._subplots.AxesSubplot at 0x7fc2a3c24eb8>
-
-
-
-
-
-
-    Text(0.5, 1.0, 'Data Class distribution')
-
-
-
-
-
-
-    Text(0.5, 0, 'Class')
-
-
-
-
-
-
     Text(0, 0.5, 'Frequency')
 
 
 
 
-![png](output_14_4.png)
+![png](output_15_1.png)
 
 
-Now I'm sure the data is totally unbalanced.
+Now I'm sure, the data is totally unbalanced.
 
 <font color='red'>__Reminder to the author (me)__: Talk about unbalanced data approachs (collect data, metrics and resampling).</font>
 
-## Data exploration / data cleaning
+__There are several ways to approach this unbalanced distribution problem:__
+
+- Collect more data. (Not applicable in this case)
+***
+- Use metrics like F1, Precision, Recall and ROC
+    - __Here is a link for a very good post talking about metrics and unbalanced data: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba__
+***
+- Resampling the dataset
+
+    - This is as method that will process the data to have an approximate 50-50 ratio;
+    
+    - One way to anchieve this is OVER-sampling, adding copies of the under-represented class (better with __little__ data);
+    
+    - Another way is UNDER-sampling, deleting instances from the over-represented class (better with __lot's__ of data).
+
+## Data exploration / Data cleaning
 
 ###  Have any null value in the DataFrame?
 
@@ -244,7 +241,26 @@ print(normal_data.Amount.describe())
 
 ## Feature engineering / feature selection
 
+I am not going to perform feature engineering or feature selection in first instance.
+
+The dataset already has been downgraded in order to contain 30 features (28 anonymous + time + amount).
+
+Acording to Kaggle's description, they used PCA as feature engineering to reduce number of features.
+
 ## Model evaluation and selection
+
+### Approach:
+- Compare what happens when using resampling techniques and when not using it.
+***
+- Evaluate the models by using some of the performance metrics mentioned above.
+***
+- Repeat the best resampling/not resampling method, by tuning the parameters in the logistic regression classifier.
+***
+- Finally perform classifications model using other classification algorithms.
+
+### Classifier Algorithms
+
+
 
 ## Model optimization
 
