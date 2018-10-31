@@ -1,20 +1,74 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from IPython.core.interactiveshell import InteractiveShell
-#import matplotlib.pyplot as plt
-InteractiveShell.ast_node_interactivity = "all"
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score
+import warnings
+
+warnings.filterwarnings("ignore")
+
+def evaluate_models(X, y):
+    # Creating dict to save scores to evaluate:
+    f1_scores['MLPClassifier'] = []
+    roc_scores['MLPClassifier'] = []
+    f1_scores['RandomForestClassifier'] = []
+    roc_scores['RandomForestClassifier'] = []
+
+    # Initializing Stratified Cross Validation:
+    sss = StratifiedShuffleSplit(n_splits=3, test_size=0.3, random_state=42)
+    for train_index, test_index in sss.split(X, y):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        # Create a dic to save all metric results and print the average...
+        perform_models(
+            [
+                MLPClassifier(solver='lbfgs'),
+                RandomForestClassifier(n_estimators=100, n_jobs=-1),
+            ],
+            X_train, X_test,
+            y_train, y_test
+        )
+    for model in f1_scores.keys():
+        print(model + ' has f1 average: ' + str( sum(f1_scores[model]) / len(f1_scores[model]) ))
+        print(model + ' has roc_auc average: ' + str( sum(roc_scores[model]) / len(roc_scores[model]) ))
+
+# Function to perform a list of models:
+def perform_models(classifiers, X_train, X_test, y_train, y_test):
+    string = ''
+
+    for classifier in classifiers:
+        string += classifier.__class__.__name__
+
+        # Train
+        classifier.fit(X_train, y_train)
+        # Predicting values with model:
+        predicteds = classifier.predict(X_test)
+        # Getting score metrics:
+        f1 = f1_score(y_test, predicteds)
+        roc = roc_auc_score(y_test, predicteds, average='weighted')
+
+        # Adding scores:
+        f1_scores[classifier.__class__.__name__].append(f1)
+        roc_scores[classifier.__class__.__name__].append(roc)
+
+        string += ' has f1: ' + str(f1) + ' roc_auc: ' + str(roc)+ '\n'
+        print(string)
+        string = ''
+
 
 # Reading the dataset
 card_transactions = pd.read_csv('../creditcard.csv')
-
+'''
 # Saving in a pickle to be read faster
 #card_transactions.to_pickle('card_transactions.pkl')
 
 #card_transactions = pd.read_pickle('card_transactions.pkl')
 
 ## 1. Understand the problem and the data
-
 # Seeing the features
 #print(card_transactions.shape)
 
@@ -59,13 +113,28 @@ print(normal_data.Amount.describe())
 # I am not going to perform feature engineering or feature selection in first instance.
 # The dataset already has been downgraded in order to contain 30 features (28 anonamised + time + amount).
 # As the description, they used PCA.
+# The only thing I'm going to do is normalize the _Amount_. As we could see previously, have a lot of variantion on data.
+'''
+
+amount_values = card_transactions['Amount'].values
+standardized_amount = StandardScaler().fit_transform(amount_values.reshape(-1, 1))
+card_transactions['normAmount'] = standardized_amount
+card_transactions = card_transactions.drop(['Time', 'Amount'], axis=1)
+#print(card_transactions['normAmount'].head())
 
 ## 4. Model evaluation and selection
-#2 I will compare what happens when using resampling and when not using it. Will test this approach using a simple logistic regression classifier.
-#3 I will evaluate the models by using some of the performance metrics mentioned above.
-#4 I will repeat the best resampling/not resampling method, by tuning the parameters in the logistic regression classifier.
-#5 I will finally perform classifications model using other classification algorithms.
+#1) Select Classifiers Algorithms to be used.
+#2) Compare what happens when using resampling techniques and when not using it.
+#3) Evaluate the models by using *Stratified Cross Validation (for not resampled), normal Cross Validation (for resampled) and some of the performance metrics mentioned before.
+#4) Repeat the best resampling/not resampling method, by tuning the parameters.
+# *Stratified Cross Validation is a recommended CV technique to large imbalance in the distribution of the target class which the folds are made by preserving the percentage of samples for each class.
 
+X = card_transactions.iloc[:, card_transactions.columns != 'Class']
+y = card_transactions.iloc[:, card_transactions.columns == 'Class']
+f1_scores = {}
+roc_scores = {}
+
+evaluate_models(X, y)
 ## 5. Model optimization
 
 ## 6. Interpretation of results and predictions

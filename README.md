@@ -9,7 +9,7 @@
    
    The features V1, V2, ..., V28 are the principal components obtained with PCA and all are numeric and confidentials.
 
-#### Dataset 
+#### Dataset: 
 
 https://www.kaggle.com/mlg-ulb/creditcardfraud
 
@@ -35,9 +35,23 @@ Doing the necessary imports:
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score
+import warnings
 ```
 
-### Reading the dataset:
+Let's ignore warnings about deprecated things:
+
+
+```python
+warnings.filterwarnings("ignore")
+```
+
+#### Reading the dataset:
 
 
 ```python
@@ -51,12 +65,12 @@ I will start seeing the shape and columns names of our dataset, to answer my que
 
 ```python
 print(card_transactions.shape)
-print('----------------------------------------------------------------------')
+print('---------------------------------------------------------------------------')
 print(card_transactions.columns)
 ```
 
     (284807, 31)
-    ----------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Index(['Time', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10',
            'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17', 'V18', 'V19', 'V20',
            'V21', 'V22', 'V23', 'V24', 'V25', 'V26', 'V27', 'V28', 'Amount',
@@ -134,19 +148,17 @@ plt.ylabel("Frequency")
 
 
 
-![png](output_15_1.png)
+![png](output_17_1.png)
 
 
 Now I'm sure, the data is totally unbalanced.
-
-<font color='red'>__Reminder to the author (me)__: Talk about unbalanced data approachs (collect data, metrics and resampling).</font>
 
 __There are several ways to approach this unbalanced distribution problem:__
 
 - Collect more data. (Not applicable in this case)
 ***
 - Use metrics like F1, Precision, Recall and ROC
-    - __Here is a link for a very good post talking about metrics and unbalanced data: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba__
+    - __Here is a link for a very good post talking about metrics for unbalanced data: https://towardsdatascience.com/what-metrics-should-we-use-on-imbalanced-data-set-precision-recall-roc-e2e79252aeba__
 ***
 - Resampling the dataset
 
@@ -155,6 +167,7 @@ __There are several ways to approach this unbalanced distribution problem:__
     - One way to anchieve this is OVER-sampling, adding copies of the under-represented class (better with __little__ data);
     
     - Another way is UNDER-sampling, deleting instances from the over-represented class (better with __lot's__ of data).
+***
 
 ## Data exploration / Data cleaning
 
@@ -243,24 +256,180 @@ print(normal_data.Amount.describe())
 
 I am not going to perform feature engineering or feature selection in first instance.
 
-The dataset already has been downgraded in order to contain 30 features (28 anonymous + time + amount).
+The dataset already has been downgraded in order to contain 30 features (28 anonymous + time + amount). Acording to Kaggle's description, they used PCA as feature engineering to reduce number of features.
 
-Acording to Kaggle's description, they used PCA as feature engineering to reduce number of features.
+The only thing I'm going to do is normalize the _Amount_. As we could see previously, have a lot of variantion on data.
+
+
+```python
+amount_values = card_transactions['Amount'].values
+standardized_amount = StandardScaler().fit_transform(amount_values.reshape(-1, 1))
+card_transactions['normAmount'] = standardized_amount
+card_transactions = card_transactions.drop(['Time', 'Amount'], axis=1)
+print(card_transactions['normAmount'].head())
+```
+
+    0    0.244964
+    1   -0.342475
+    2    1.160686
+    3    0.140534
+    4   -0.073403
+    Name: normAmount, dtype: float64
+
 
 ## Model evaluation and selection
 
 ### Approach:
-- Compare what happens when using resampling techniques and when not using it.
+1. Select Classifiers Algorithms to be used.
 ***
-- Evaluate the models by using some of the performance metrics mentioned above.
+2. Compare what happens when using resampling techniques and when not using it.
+    - Evaluate the models by using *_Stratified Cross Validation_ (for not resampled), normal Cross Validation (for resampled) and some of the performance metrics mentioned before.
 ***
-- Repeat the best resampling/not resampling method, by tuning the parameters in the logistic regression classifier.
+3. Repeat the best resampling/not resampling method, by tuning the parameters.
 ***
-- Finally perform classifications model using other classification algorithms.
 
-### Classifier Algorithms
+*_Stratified Cross Validation_ is a recommended CV technique to large imbalance in the distribution of the target class which the folds are made by preserving the percentage of samples for each class.
+
+### Classifier Algorithms:
+
+I'm going to use these algorithms:
+
+* [Multi-layer Perceptron (MLPClassifier)](http://scikit-learn.org/stable/modules/neural_networks_supervised.html#multi-layer-perceptron)
+* [Random Forest Classifier (RandomForestClassifier)](http://scikit-learn.org/stable/modules/ensemble.html#random-forests)
+
+### Not resampling:
+
+Spliting data in X set and Y set (target): 
 
 
+```python
+X = card_transactions.iloc[:, card_transactions.columns != 'Class']
+y = card_transactions.iloc[:, card_transactions.columns == 'Class']
+```
+
+I'm going to create a function to perform and evaluate the models.
+- As said before, going to use Stratified Cross Validation because the dataset distribution is imbalanced
+- Will evaluate models with metrics: F1 and ROC_AUC
+
+
+```python
+# This fuction will evaluate used models returning f1 and roc_auc scores averages 
+# of Stratified Cross Validation folders.
+def evaluate_models(X, y):
+    # Creating dict to save scores to evaluate:
+    f1_scores['MLPClassifier'] = []
+    roc_scores['MLPClassifier'] = []
+    f1_scores['RandomForestClassifier'] = []
+    roc_scores['RandomForestClassifier'] = []
+
+    # Initializing Stratified Cross Validation:
+    sss = StratifiedShuffleSplit(n_splits=5, test_size=0.3, random_state=42)
+    count = 0
+    for train_index, test_index in sss.split(X, y):
+        count += 1
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        perform_models(
+            [
+                MLPClassifier(solver='lbfgs'),
+                RandomForestClassifier(n_estimators=100, n_jobs=-1),
+            ],
+            X_train, X_test,
+            y_train, y_test,
+            count
+        )
+    print('Results:')
+    for model in f1_scores.keys():
+        print('  ' + model + ' has f1 average: ' + str( sum(f1_scores[model]) / len(f1_scores[model]) ))
+        print('  ' + model + ' has roc_auc average: ' + str( sum(roc_scores[model]) / len(roc_scores[model]) ))
+
+# Function to perform a list of models:
+def perform_models(classifiers, X_train, X_test, y_train, y_test, count):
+    string = ''
+    print(str(count) + ' interaction:\n')
+    for classifier in classifiers:
+        # Creating key index in dict to save evaluation metrics value:
+
+        string += classifier.__class__.__name__
+
+        # Train:
+        classifier.fit(X_train, y_train)
+        
+        # Predicting values with model:
+        predicteds = classifier.predict(X_test)
+        
+        # Getting score metrics:
+        f1 = f1_score(y_test, predicteds)
+        roc = roc_auc_score(y_test, predicteds, average='weighted')
+        
+        # Adding scores:
+        f1_scores[classifier.__class__.__name__].append(f1)
+        roc_scores[classifier.__class__.__name__].append(roc)
+
+        string += ' has f1: ' + str(f1) + ' roc_auc: ' + str(roc)+ '\n'
+        print('    ' + string)
+        string = ''
+    print('-----------------------------------------------------------------')
+```
+
+Now I'm going to create f1_scores and roc_scores dictionaries and call evaluate_models function:
+
+
+```python
+f1_scores = {}
+roc_scores = {}
+
+evaluate_models(X, y)
+```
+
+    1 interaction:
+    
+        MLPClassifier has f1: 0.8057553956834532 roc_auc: 0.8782728622285454
+    
+        RandomForestClassifier has f1: 0.849624060150376 roc_auc: 0.8817274467151365
+    
+    ----------------------------------------------
+    2 interaction:
+    
+        MLPClassifier has f1: 0.8461538461538461 roc_auc: 0.9086841296422749
+    
+        RandomForestClassifier has f1: 0.8654545454545455 roc_auc: 0.9019801309604346
+    
+    ----------------------------------------------
+    3 interaction:
+    
+        MLPClassifier has f1: 0.8175182481751826 roc_auc: 0.8782963102618417
+    
+        RandomForestClassifier has f1: 0.8602941176470589 roc_auc: 0.8952292362120018
+    
+    ----------------------------------------------
+    4 interaction:
+    
+        MLPClassifier has f1: 0.8382352941176471 roc_auc: 0.8850765150518946
+    
+        RandomForestClassifier has f1: 0.8602941176470589 roc_auc: 0.8952292362120018
+    
+    ----------------------------------------------
+    5 interaction:
+    
+        MLPClassifier has f1: 0.8059701492537312 roc_auc: 0.8647945207649763
+    
+        RandomForestClassifier has f1: 0.8178438661710038 roc_auc: 0.8715571395300571
+    
+    ----------------------------------------------
+    Results:
+    MLPClassifier has f1 average: 0.822726586676772
+    MLPClassifier has roc_auc average: 0.8830248675899066
+    RandomForestClassifier has f1 average: 0.8507021414140086
+    RandomForestClassifier has roc_auc average: 0.8891446379259262
+
+
+### Resampling (with under-sampling):
+
+
+```python
+
+```
 
 ## Model optimization
 
